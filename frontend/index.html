@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoTester AI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">AutoTester <strong>AI</strong></span>
+        </div>
+        <p class="tagline">Instant website analysis powered by Gemini</p>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- URL Input -->
+      <section class="card input-card">
+        <form id="testForm" autocomplete="off">
+          <label class="input-label" for="urlInput">Enter a URL to analyze</label>
+          <div class="input-row">
+            <input
+              type="url"
+              id="urlInput"
+              class="url-input"
+              placeholder="https://example.com"
+              required
+            />
+            <button type="submit" id="submitBtn" class="btn-primary">
+              <span class="btn-label">Analyze</span>
+              <span class="btn-spinner hidden" aria-hidden="true"></span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Skills badge strip (populated by JS) -->
+      <div id="skillsBadges" class="skills-badges hidden"></div>
+
+      <!-- Progress log -->
+      <section id="progressCard" class="card progress-card hidden">
+        <h2 class="section-title">Progress</h2>
+        <ul id="progressLog" class="progress-log" aria-live="polite"></ul>
+      </section>
+
+      <!-- Report -->
+      <section id="reportCard" class="card report-card hidden">
+        <div class="score-banner" id="scoreBanner">
+          <div class="score-ring" id="scoreRing">
+            <span id="scoreValue">—</span>
+            <span class="score-denom">/10</span>
+          </div>
+          <div class="score-meta">
+            <div class="score-label">Overall Score</div>
+            <div id="testedUrl" class="tested-url"></div>
+          </div>
+        </div>
+
+        <div id="summaryBox" class="summary-box hidden">
+          <p id="summaryText"></p>
+        </div>
+
+        <div id="skillsResults" class="skills-results"></div>
+
+        <div class="report-actions">
+          <button id="copyBtn" class="btn-secondary">Copy JSON report</button>
+          <button id="newTestBtn" class="btn-secondary">New test</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Skills are modular — drop a new <code>*_skill.py</code> into <code>app/skills/</code> and it runs automatically.
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
