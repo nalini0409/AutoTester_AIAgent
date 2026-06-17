@@ -14,6 +14,23 @@ Restructure the LangGraph so `RequirementsSkill` runs first and its inferred req
 
 ---
 
+## BL-003 — Editable Requirements UI (Two-Phase Analysis Flow)
+**Priority:** High  
+**Status:** Backlog
+
+Add a two-phase UI flow: requirements are generated and shown first, user can edit them, then the full analysis runs using the edited requirements as context for every skill.
+
+**Changes needed:**
+- `app/graph.py`: add `requirements: str` to `TestState`; build separate `analysis_graph` (excludes `RequirementsSkill`); add `get_requirements(url)` coroutine for phase 1
+- `app/skills/base_skill.py`: add `requirements=""` param to `analyze()` signature
+- All skill files: inject requirements into LLM prompt when provided
+- `app/main.py`: add `GET /api/requirements?url=` (phase 1 SSE) and `POST /api/analyze` with `{url, requirements}` body (phase 2 SSE)
+- `frontend/index.html`: add editable requirements card between URL input and results
+- `frontend/styles.css`: style requirements editor (textarea + edit/proceed buttons)
+- `frontend/app.js`: implement two-phase flow — call `/api/requirements` first, show editable card, then POST `/api/analyze` with edited requirements
+
+---
+
 ## BL-002 — Website Traversal (Multi-Page Analysis)
 **Priority:** Medium  
 **Status:** Backlog
