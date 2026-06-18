@@ -26,6 +26,7 @@ async def run_test(url: str, request: Request):
             "url": url,
             "html_content": "",
             "page_data": {},
+            "requirements": "",
             "skill_results": [],
             "progress_updates": [],
             "report": {},

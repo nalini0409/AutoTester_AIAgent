@@ -11,8 +11,9 @@ class ContentSkill(BaseSkill):
     name = "Content Quality"
     description = "Assesses readability, content depth, heading hierarchy, and page purpose clarity"
 
-    async def analyze(self, url: str, page_data: dict, llm: Any) -> dict:
+    async def analyze(self, url: str, page_data: dict, llm: Any, requirements: str = "") -> dict:
         text_sample = page_data.get("text_sample", "")[:2000]
+        req_section = f"\n\nInferred product requirements (check whether content fulfils these):\n{requirements}\n" if requirements else ""
         prompt = f"""You are a content quality specialist. Analyze the content quality of this webpage and return ONLY valid JSON.
 
 URL: {url}
@@ -25,7 +26,7 @@ Page Data:
 - H2 tags (first 5): {page_data.get('h2_tags', [])}
 - H3 tags (first 5): {page_data.get('h3_tags', [])}
 - Text sample (first 2000 chars):
-{text_sample}
+{text_sample}{req_section}
 
 Evaluate: clarity of purpose, content depth, heading hierarchy, readability, and overall quality. Return ONLY this JSON (no markdown, no extra text):
 {{"score": <0-10>, "findings": ["finding1", "finding2", "finding3", "finding4"], "details": "<2-3 sentence assessment>"}}"""

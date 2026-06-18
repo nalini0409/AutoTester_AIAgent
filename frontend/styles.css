@@ -252,6 +252,14 @@ body {
 .skill-score-badge.yellow { background: rgba(234,179,8,.15);  color: var(--yellow); }
 .skill-score-badge.red    { background: rgba(239,68,68,.15);  color: var(--red); }
 .skill-score-badge.gray   { background: rgba(139,143,168,.1); color: var(--muted); }
+.skill-score-badge.req    { background: rgba(108,99,255,.15); color: var(--accent); }
+
+/* Requirements card — prominent treatment */
+.req-card { border-color: rgba(108,99,255,.4); }
+.req-card .skill-header { background: rgba(108,99,255,.07); }
+.req-card .skill-header:hover { background: rgba(108,99,255,.13); }
+.req-card .skill-name { color: var(--accent); }
+.req-label { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 8px; }
 
 .chevron { color: var(--muted); font-size: 12px; transition: transform .2s; }
 .skill-card.open .chevron { transform: rotate(180deg); }

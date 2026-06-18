@@ -167,24 +167,29 @@ function renderReport(data) {
 }
 
 function renderSkillCard(result) {
-  // Avoid duplicates
   if (document.getElementById(`skill-${slugify(result.skill_name)}`)) return;
 
-  const score    = result.score;
-  const colorCls = score === null ? 'gray' : score >= 7 ? 'green' : score >= 4 ? 'yellow' : 'red';
-  const scoreLabel = score !== null ? `${score.toFixed(1)}/10` : (result.error ? 'Error' : 'N/A');
+  const isReq = !!result.is_requirements;
+  const score  = result.score;
+
+  const colorCls   = isReq ? 'req' : score === null ? 'gray' : score >= 7 ? 'green' : score >= 4 ? 'yellow' : 'red';
+  const scoreLabel = isReq
+    ? (score !== null ? `Clarity ${score.toFixed(1)}/10` : 'Error')
+    : score !== null ? `${score.toFixed(1)}/10` : (result.error ? 'Error' : 'N/A');
 
   const card = document.createElement('div');
-  card.className = 'skill-card';
+  card.className = isReq ? 'skill-card req-card' : 'skill-card';
   card.id = `skill-${slugify(result.skill_name)}`;
 
   const findingsHtml = (result.findings || [])
     .map(f => `<li class="finding-item">${escHtml(f)}</li>`)
     .join('');
 
+  const badgeExtra = isReq ? ' 📋 Inferred Requirements' : '';
+
   card.innerHTML = `
     <div class="skill-header" role="button" aria-expanded="false" tabindex="0">
-      <span class="skill-name">${escHtml(result.skill_name)}</span>
+      <span class="skill-name">${escHtml(result.skill_name)}${badgeExtra ? `<span class="req-label">${badgeExtra}</span>` : ''}</span>
       <span class="skill-right">
         <span class="skill-score-badge ${colorCls}">${scoreLabel}</span>
         <span class="chevron">▼</span>
@@ -202,9 +207,15 @@ function renderSkillCard(result) {
   header.addEventListener('click', () => toggleCard(card, header));
   header.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') toggleCard(card, header); });
 
-  skillsResults.appendChild(card);
-  // Auto-open the first card
-  if (skillsResults.children.length === 1) toggleCard(card, header);
+  // Requirements card always goes first; other cards append normally
+  if (isReq && skillsResults.firstChild) {
+    skillsResults.insertBefore(card, skillsResults.firstChild);
+  } else {
+    skillsResults.appendChild(card);
+  }
+
+  // Auto-open requirements card (and first card if only one)
+  if (isReq || skillsResults.children.length === 1) toggleCard(card, header);
 }
 
 function toggleCard(card, header) {

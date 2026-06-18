@@ -10,8 +10,9 @@ from .base_skill import BaseSkill
 class RequirementsSkill(BaseSkill):
     name = "Requirements Analysis"
     description = "Infers functional and non-functional requirements from website content and structure"
+    runs_first = True  # runs before all other skills; findings become context for them
 
-    async def analyze(self, url: str, page_data: dict, llm: Any) -> dict:
+    async def analyze(self, url: str, page_data: dict, llm: Any, requirements: str = "") -> dict:
         text_sample = page_data.get("text_sample", "")[:2500]
         prompt = f"""You are a business analyst. Based solely on this website's content and structure, infer what the product requirements likely are. Make your best informed guess — be specific and confident.
 

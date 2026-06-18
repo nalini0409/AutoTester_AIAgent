@@ -2,7 +2,7 @@
 
 ## BL-001 — Requirements-Driven Testing
 **Priority:** High  
-**Status:** Backlog
+**Status:** Done ✅
 
 Restructure the LangGraph so `RequirementsSkill` runs first and its inferred requirements become context for every subsequent skill. Currently all skills run as peers with no awareness of each other.
 

@@ -11,7 +11,8 @@ class SEOSkill(BaseSkill):
     name = "SEO Analysis"
     description = "Checks title tags, meta descriptions, heading structure, alt text, and structured data"
 
-    async def analyze(self, url: str, page_data: dict, llm: Any) -> dict:
+    async def analyze(self, url: str, page_data: dict, llm: Any, requirements: str = "") -> dict:
+        req_section = f"\n\nInferred product requirements (use these to judge SEO alignment):\n{requirements}\n" if requirements else ""
         prompt = f"""You are an SEO expert. Analyze the SEO quality of this webpage and return ONLY valid JSON.
 
 URL: {url}
@@ -30,7 +31,7 @@ Page Data:
 - OG description: "{page_data.get('og_description', '')}"
 - Has Schema.org markup: {page_data.get('has_schema', False)}
 - Has favicon: {page_data.get('has_favicon', False)}
-- Language attribute: "{page_data.get('lang', '')}"
+- Language attribute: "{page_data.get('lang', '')}"{req_section}
 
 Return ONLY this JSON (no markdown, no extra text):
 {{"score": <0-10>, "findings": ["finding1", "finding2", "finding3", "finding4"], "details": "<2-3 sentence assessment>"}}"""

@@ -11,7 +11,8 @@ class AccessibilitySkill(BaseSkill):
     name = "Accessibility Analysis"
     description = "Checks ARIA attributes, form labels, semantic HTML, language declaration, and keyboard nav indicators"
 
-    async def analyze(self, url: str, page_data: dict, llm: Any) -> dict:
+    async def analyze(self, url: str, page_data: dict, llm: Any, requirements: str = "") -> dict:
+        req_section = f"\n\nInferred product requirements (check accessibility against these):\n{requirements}\n" if requirements else ""
         prompt = f"""You are a web accessibility expert (WCAG 2.1). Analyze the accessibility of this webpage and return ONLY valid JSON.
 
 URL: {url}
@@ -28,7 +29,7 @@ Page Data:
 - H1 tags: {page_data.get('h1_tags', [])}
 - H2 tags (first 5): {page_data.get('h2_tags', [])}
 - Page title: "{page_data.get('title', '')}"
-- Word count: {page_data.get('word_count', 0)}
+- Word count: {page_data.get('word_count', 0)}{req_section}
 
 Evaluate WCAG 2.1 Level AA compliance signals. Return ONLY this JSON (no markdown, no extra text):
 {{"score": <0-10>, "findings": ["finding1", "finding2", "finding3", "finding4"], "details": "<2-3 sentence assessment>"}}"""

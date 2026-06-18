@@ -22,6 +22,7 @@ class TestState(TypedDict):
     url: str
     html_content: str
     page_data: dict
+    requirements: str                            # populated by runs_first skills
     skill_results: Annotated[list, operator.add]
     progress_updates: Annotated[list, operator.add]
     report: dict
@@ -189,13 +190,57 @@ async def fetch_content_node(state: TestState) -> dict:
     }
 
 
-def _make_skill_node(skill):
-    async def skill_node(state: TestState) -> dict:
+def _make_first_skill_node(skill):
+    """Node for skills that run before others (runs_first=True).
+    Stores findings in state.requirements so subsequent skills can use them."""
+    async def first_skill_node(state: TestState) -> dict:
         if state.get("status") == "failed":
             return {}
         llm = get_llm()
         try:
             result = await skill.analyze(state["url"], state.get("page_data", {}), llm)
+            score = float(result.get("score", 5.0))
+            findings = result.get("findings", [])
+            return {
+                "requirements": "\n".join(findings),
+                "skill_results": [{
+                    "skill_name": skill.name,
+                    "status": "completed",
+                    "score": score,
+                    "findings": findings,
+                    "details": result.get("details", ""),
+                    "is_requirements": True,
+                }],
+                "progress_updates": [f"✓ {skill.name} — requirements extracted"],
+            }
+        except Exception as e:
+            return {
+                "requirements": "",
+                "skill_results": [{
+                    "skill_name": skill.name,
+                    "status": "failed",
+                    "score": None,
+                    "findings": [],
+                    "details": "",
+                    "error": str(e),
+                    "is_requirements": True,
+                }],
+                "progress_updates": [f"✗ {skill.name} failed: {e}"],
+            }
+
+    first_skill_node.__name__ = f"skill_{skill.name.lower().replace(' ', '_')}"
+    return first_skill_node
+
+
+def _make_skill_node(skill):
+    """Node for regular skills. Receives requirements context from state."""
+    async def skill_node(state: TestState) -> dict:
+        if state.get("status") == "failed":
+            return {}
+        llm = get_llm()
+        requirements = state.get("requirements", "")
+        try:
+            result = await skill.analyze(state["url"], state.get("page_data", {}), llm, requirements)
             score = float(result.get("score", 5.0))
             return {
                 "skill_results": [{
@@ -239,7 +284,8 @@ async def generate_report_node(state: TestState) -> dict:
         }
         return {"report": report, "status": "failed", "progress_updates": ["✗ Could not complete testing"]}
 
-    scores = [r["score"] for r in skill_results if r.get("score") is not None]
+    # Exclude requirements-type results from the overall quality score
+    scores = [r["score"] for r in skill_results if r.get("score") is not None and not r.get("is_requirements")]
     overall = round(sum(scores) / len(scores), 1) if scores else None
 
     summary = ""
@@ -264,6 +310,7 @@ async def generate_report_node(state: TestState) -> dict:
         "url": url,
         "status": "completed",
         "overall_score": overall,
+        "requirements": state.get("requirements", ""),
         "skill_results": skill_results,
         "summary": summary,
     }
@@ -280,22 +327,32 @@ async def generate_report_node(state: TestState) -> dict:
 # ---------------------------------------------------------------------------
 
 def build_graph():
-    skills = discover_skills()
-    workflow = StateGraph(TestState)
+    all_skills = discover_skills()
+    # runs_first skills execute before others and populate state.requirements
+    first_skills = [s for s in all_skills if s.runs_first]
+    other_skills = [s for s in all_skills if not s.runs_first]
 
+    workflow = StateGraph(TestState)
     workflow.add_node("fetch_content", fetch_content_node)
     workflow.add_node("generate_report", generate_report_node)
 
-    skill_node_names: list[str] = []
-    for skill in skills:
+    # Build ordered list of all node names: first_skills then other_skills
+    ordered_names: list[str] = []
+
+    for skill in first_skills:
         node_name = "skill_" + skill.name.lower().replace(" ", "_").replace("-", "_")
-        skill_node_names.append(node_name)
+        ordered_names.append(node_name)
+        workflow.add_node(node_name, _make_first_skill_node(skill))
+
+    for skill in other_skills:
+        node_name = "skill_" + skill.name.lower().replace(" ", "_").replace("-", "_")
+        ordered_names.append(node_name)
         workflow.add_node(node_name, _make_skill_node(skill))
 
     workflow.set_entry_point("fetch_content")
 
-    if skill_node_names:
-        first = skill_node_names[0]
+    if ordered_names:
+        first = ordered_names[0]
 
         def route_after_fetch(state: TestState) -> str:
             return "generate_report" if state.get("status") == "failed" else first
@@ -305,9 +362,9 @@ def build_graph():
             route_after_fetch,
             {"generate_report": "generate_report", first: first},
         )
-        for i in range(len(skill_node_names) - 1):
-            workflow.add_edge(skill_node_names[i], skill_node_names[i + 1])
-        workflow.add_edge(skill_node_names[-1], "generate_report")
+        for i in range(len(ordered_names) - 1):
+            workflow.add_edge(ordered_names[i], ordered_names[i + 1])
+        workflow.add_edge(ordered_names[-1], "generate_report")
     else:
         workflow.add_edge("fetch_content", "generate_report")
 
